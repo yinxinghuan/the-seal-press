@@ -167,7 +167,15 @@ export default function TheSealPress() {
     if (destination === 'buried') {
       events.trigger(`buried:${finalSeal.iconKey}`);
       events.trigger('buried');
-      setTimeout(() => field.refresh(), 600);
+      // Show it in the Field instantly — the platform save → get/data/list
+      // read is eventually-consistent, so a plain refresh races the write.
+      field.injectLocal({
+        userId: telegramId || 'self',
+        userName: profile?.name,
+        userAvatarUrl: profile?.avatarUrl,
+        seal: finalSeal,
+      });
+      setTimeout(() => field.refresh(), 1500);
     }
 
     setActiveSeal(null);
@@ -185,9 +193,10 @@ export default function TheSealPress() {
     persist(nextSave);
     setDetail(null);
     // A buried seal lives in your own save, so deleting it also removes it
-    // from the Field — refresh so the public feed reflects the removal.
+    // from the Field — drop any optimistic copy + refresh the public feed.
     if (target?.destination === 'buried') {
-      setTimeout(() => field.refresh(), 400);
+      field.removeLocal(sealId);
+      setTimeout(() => field.refresh(), 1500);
     }
   };
 

@@ -9,7 +9,7 @@
 // seals from all returned users, then sort newest first, then cap
 // display count. Don't drop entries silently at the data layer.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { callAigramAPI, type AigramResponse } from '@shared/runtime/bridge';
 import { getGameUuid } from '@shared/runtime/game-id';
 import type { Seal, SealSave } from '../types';
@@ -36,17 +36,47 @@ interface UseFieldResult {
   entries: FieldEntry[];
   loaded: boolean;
   refresh: () => Promise<void>;
+  /** Optimistically show a just-buried seal in the feed immediately,
+   *  bridging the platform save → get/data/list replication lag. The next
+   *  refresh dedupes it once the server reflects the write. */
+  injectLocal: (entry: FieldEntry) => void;
+  /** Drop an optimistic entry (e.g. the user discards it same-session). */
+  removeLocal: (sealId: string) => void;
 }
 
 const MAX_DISPLAY = 60;
 
 export function useField(): UseFieldResult {
-  const [entries, setEntries] = useState<FieldEntry[]>([]);
+  const [serverEntries, setServerEntries] = useState<FieldEntry[]>([]);
+  const [localEntries, setLocalEntries] = useState<FieldEntry[]>([]);
   const [loaded, setLoaded] = useState(false);
   const sessionId = getGameUuid();
 
+  // Merge optimistic-local + server, dedupe by seal.id (server wins),
+  // newest first, capped at display count.
+  const entries = useMemo(() => {
+    const seen = new Set<string>();
+    const merged: FieldEntry[] = [];
+    for (const e of [...serverEntries, ...localEntries]) {
+      if (seen.has(e.seal.id)) continue;
+      seen.add(e.seal.id);
+      merged.push(e);
+    }
+    merged.sort((a, b) => (b.seal.ts ?? 0) - (a.seal.ts ?? 0));
+    return merged.slice(0, MAX_DISPLAY);
+  }, [serverEntries, localEntries]);
+
+  const injectLocal = (entry: FieldEntry) => {
+    setLocalEntries(prev =>
+      prev.some(e => e.seal.id === entry.seal.id) ? prev : [entry, ...prev]);
+  };
+
+  const removeLocal = (sealId: string) => {
+    setLocalEntries(prev => prev.filter(e => e.seal.id !== sealId));
+  };
+
   const refresh = async () => {
-    if (!sessionId) { setEntries([]); setLoaded(true); return; }
+    if (!sessionId) { setServerEntries([]); setLoaded(true); return; }
     setLoaded(false);
     try {
       const res = await callAigramAPI<AigramResponse<SaveRow[]>>(
@@ -89,7 +119,7 @@ export function useField(): UseFieldResult {
       );
       const profileMap = new Map<string, ProfileData | null>(profileEntries);
 
-      setEntries(
+      setServerEntries(
         limited.map(({ userId, seal }) => {
           const p = profileMap.get(userId) || null;
           return {
@@ -101,7 +131,7 @@ export function useField(): UseFieldResult {
         }),
       );
     } catch {
-      setEntries([]);
+      setServerEntries([]);
     } finally {
       setLoaded(true);
     }
@@ -109,5 +139,5 @@ export function useField(): UseFieldResult {
 
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
-  return { entries, loaded, refresh };
+  return { entries, loaded, refresh, injectLocal, removeLocal };
 }
