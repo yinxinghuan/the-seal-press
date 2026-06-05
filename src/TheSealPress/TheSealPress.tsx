@@ -18,7 +18,7 @@ import { consultOracle } from './hooks/useOracle';
 import { todayKey, formatCountdown, msUntilMidnight } from './utils/day';
 import { preloadImage } from './utils/preload';
 import { newId } from './utils/rng';
-import type { Seal, SealSave, CastDestination, Phase } from './types';
+import type { Seal, SealSave, Phase } from './types';
 import { MAX_PRESS_PER_DAY } from './types';
 import './TheSealPress.less';
 
@@ -70,7 +70,7 @@ export default function TheSealPress() {
   // survive reloads regardless of server replication. Dedupe by seal.id.
   const fieldEntries = useMemo<FieldEntry[]>(() => {
     const mine: FieldEntry[] = (mirror?.seals ?? [])
-      .filter(s => s.destination === 'buried' && s.imageUrl)
+      .filter(s => s.imageUrl)
       .map(seal => ({
         userId: telegramId || 'self',
         userName: profile?.name,
@@ -175,9 +175,11 @@ export default function TheSealPress() {
     }
   };
 
-  const handleCast = (destination: CastDestination) => {
+  // One ritual action: pressing seals it into the public Field and keeps a
+  // copy in your Altar. No private/public fork — every seal is public.
+  const handleSeal = () => {
     if (!mirror || !activeSeal) return;
-    const finalSeal: Seal = { ...activeSeal, destination };
+    const finalSeal: Seal = { ...activeSeal, destination: 'buried' };
     const nextUsed = mirror.pressDay === today ? mirror.pressUsedToday + 1 : 1;
     const nextSave: SealSave = {
       ...mirror,
@@ -188,27 +190,18 @@ export default function TheSealPress() {
     setMirror(nextSave);
     persist(nextSave);
 
-    if (destination === 'buried') {
-      events.trigger(`buried:${finalSeal.iconKey}`);
-      events.trigger('buried');
-      // Show it in the Field instantly — the platform save → get/data/list
-      // read is eventually-consistent, so a plain refresh races the write.
-      field.injectLocal({
-        userId: telegramId || 'self',
-        userName: profile?.name,
-        userAvatarUrl: profile?.avatarUrl,
-        seal: finalSeal,
-      });
-      setTimeout(() => field.refresh(), 1500);
-    }
+    events.trigger(`buried:${finalSeal.iconKey}`);
+    events.trigger('buried');
+    // Reconcile other users' new seals shortly (own seal already shows via
+    // the mirror-derived merge in fieldEntries).
+    setTimeout(() => field.refresh(), 1500);
 
     setActiveSeal(null);
-    setPhase(destination === 'buried' ? 'field' : 'altar');
+    setPhase('field');
   };
 
   const handleDeleteSeal = (sealId: string) => {
     if (!mirror) return;
-    const target = mirror.seals.find(s => s.id === sealId);
     const nextSave: SealSave = {
       ...mirror,
       seals: mirror.seals.filter(s => s.id !== sealId),
@@ -216,12 +209,10 @@ export default function TheSealPress() {
     setMirror(nextSave);
     persist(nextSave);
     setDetail(null);
-    // A buried seal lives in your own save, so deleting it also removes it
-    // from the Field — drop any optimistic copy + refresh the public feed.
-    if (target?.destination === 'buried') {
-      field.removeLocal(sealId);
-      setTimeout(() => field.refresh(), 1500);
-    }
+    // The seal lives in your own save, which also feeds the Field — drop it
+    // and refresh the public feed.
+    field.removeLocal(sealId);
+    setTimeout(() => field.refresh(), 1500);
   };
 
   const handleMark = (sealId: string) => {
@@ -289,7 +280,7 @@ export default function TheSealPress() {
           />
         )}
         {phase === 'reveal' && activeSeal && (
-          <Reveal seal={activeSeal} onCast={handleCast} />
+          <Reveal seal={activeSeal} onSeal={handleSeal} />
         )}
         {phase === 'altar' && (
           <Altar

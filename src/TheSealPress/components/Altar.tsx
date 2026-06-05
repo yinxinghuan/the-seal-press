@@ -13,7 +13,7 @@ export default function Altar({ seals, onOpen }: Props) {
     return (
       <div className="tsp-altar tsp-altar--empty">
         <h3>Your altar is empty.</h3>
-        <p>Press your first seal — keep it here forever, or bury it for everyone.</p>
+        <p>Press your first seal. Each one is kept here and joins the Field for everyone to see.</p>
       </div>
     );
   }
@@ -21,7 +21,7 @@ export default function Altar({ seals, onOpen }: Props) {
     <div className="tsp-altar">
       <div className="tsp-altar__hd">
         <h2 className="tsp-altar__title">Altar</h2>
-        <div className="tsp-altar__count">{seals.length} KEPT</div>
+        <div className="tsp-altar__count">{seals.length} SEALS</div>
       </div>
       <div className="tsp-altar__rule" />
 
@@ -34,8 +34,6 @@ export default function Altar({ seals, onOpen }: Props) {
             <div className="tsp-altar__inscription">{seal.inscription}</div>
             <div className="tsp-altar__date">
               {relativeAgo(seal.ts, 'en')}
-              {' · '}
-              {destinationLabel(seal.destination)}
               {seal.blindPress && <span className="tsp-altar__blind"> ◌</span>}
             </div>
           </div>
@@ -43,13 +41,4 @@ export default function Altar({ seals, onOpen }: Props) {
       </div>
     </div>
   );
-}
-
-function destinationLabel(dest: string): string {
-  switch (dest) {
-    case 'kept':   return 'Kept';
-    case 'buried': return 'Field';
-    case 'sent':   return 'Sent';
-    default:       return '';
-  }
 }

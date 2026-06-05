@@ -89,11 +89,7 @@ export default function SealDetail({ seal, author, onClose, onDelete }: Props) {
             className={`tsp-detail__discard${confirming ? ' is-confirming' : ''}`}
             onClick={() => (confirming ? onDelete(seal.id) : setConfirming(true))}
           >
-            {confirming
-              ? (seal.destination === 'buried'
-                  ? 'Tap again — unbury & destroy'
-                  : 'Tap again to destroy')
-              : 'Discard this seal'}
+            {confirming ? 'Tap again to destroy' : 'Discard this seal'}
           </button>
         )}
       </div>

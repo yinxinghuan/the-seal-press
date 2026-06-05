@@ -93,7 +93,7 @@ export function useField(): UseFieldResult {
         try {
           const save = JSON.parse(row.resource_data) as SealSave;
           for (const seal of save.seals || []) {
-            if (seal && seal.imageUrl && seal.destination === 'buried') {
+            if (seal && seal.imageUrl) {
               pairs.push({ userId: row.user_id, seal });
             }
           }
