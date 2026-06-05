@@ -20,9 +20,10 @@ interface Props {
   onMark: (sealId: string) => void;
   marked: Set<string>;        // sealIds the player has already marked
   selfUserId?: string;
+  onOpen: (entry: FieldEntry) => void;
 }
 
-export default function Field({ entries, loaded, onMark, marked, selfUserId }: Props) {
+export default function Field({ entries, loaded, onMark, marked, selfUserId, onOpen }: Props) {
   if (!loaded) {
     return (
       <div className="tsp-field tsp-field--empty">
@@ -55,6 +56,7 @@ export default function Field({ entries, loaded, onMark, marked, selfUserId }: P
             isSelf={entry.userId === selfUserId}
             isMarked={marked.has(entry.seal.id)}
             onMark={() => onMark(entry.seal.id)}
+            onOpen={() => onOpen(entry)}
           />
         ))}
       </div>
@@ -63,9 +65,9 @@ export default function Field({ entries, loaded, onMark, marked, selfUserId }: P
 }
 
 function FieldCard({
-  entry, isSelf, isMarked, onMark,
+  entry, isSelf, isMarked, onMark, onOpen,
 }: {
-  entry: FieldEntry; isSelf: boolean; isMarked: boolean; onMark: () => void;
+  entry: FieldEntry; isSelf: boolean; isMarked: boolean; onMark: () => void; onOpen: () => void;
 }) {
   const { seal, userName, userAvatarUrl, userId } = entry;
   const [now, setNow] = useState(Date.now());
@@ -110,11 +112,11 @@ function FieldCard({
         </span>
       </div>
 
-      <div className="tsp-seal__img">
+      <div className="tsp-seal__img" onClick={onOpen} role="button">
         <img src={seal.imageUrl} alt="" draggable={false} />
       </div>
 
-      <div className="tsp-seal__inscription">{seal.inscription}</div>
+      <div className="tsp-seal__inscription" onClick={onOpen}>{seal.inscription}</div>
 
       <div className="tsp-seal__actions">
         <button

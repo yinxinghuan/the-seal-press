@@ -63,7 +63,11 @@ export function useSealGen() {
       `  · Central: ${icon.prompt}, single iconic debossed carving filling the middle, rendered with archaic abstraction (NOT photoreal, NOT 3D placed on top).`,
       `  · Lower-right corner: ${ALTERU_MARK}.`,
       "No fingerprints, no extra text beyond the monogram letter and the ALTERU workshop stamp.",
-      "Museum object photography, flat raking sidelight, jet pure black backdrop, slight grain, shot from directly above.",
+      "Museum object photography, flat raking sidelight, slight grain, shot from directly above as a flat-lay.",
+      "BACKGROUND: solid pure black #000000 filling every edge of the frame, full-bleed. " +
+        "The artifact sits on PURE BLACK void — NO floor, NO table, NO surface, NO ground plane, " +
+        "NO studio sweep, NO horizon line, NO grey gradient, NO cast shadow on any ground. " +
+        "The black is uniform and absolute right up to all four edges of the square.",
     ].join(' ');
 
     try {

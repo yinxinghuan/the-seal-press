@@ -9,6 +9,7 @@ import PressInput from './components/PressInput';
 import Pressing from './components/Pressing';
 import Reveal from './components/Reveal';
 import Altar from './components/Altar';
+import SealDetail, { type DetailAuthor } from './components/SealDetail';
 import Watermark from './components/Watermark';
 import { useSelfProfile } from './hooks/useSelfProfile';
 import { useSealGen } from './hooks/useSealGen';
@@ -73,6 +74,7 @@ export default function TheSealPress() {
   const [marked, setMarked] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string>('');
   const [showQuotaModal, setShowQuotaModal] = useState(false);
+  const [detail, setDetail] = useState<{ seal: Seal; author?: DetailAuthor } | null>(null);
 
   // Demo URL hooks
   const demo = useMemo(() => {
@@ -209,6 +211,15 @@ export default function TheSealPress() {
             marked={marked}
             onMark={handleMark}
             selfUserId={telegramId || undefined}
+            onOpen={(entry) => setDetail({
+              seal: entry.seal,
+              author: {
+                userId: entry.userId,
+                userName: entry.userName,
+                userAvatarUrl: entry.userAvatarUrl,
+                isSelf: entry.userId === (telegramId || undefined),
+              },
+            })}
           />
         )}
         {phase === 'press-input' && (
@@ -231,7 +242,10 @@ export default function TheSealPress() {
           <Reveal seal={activeSeal} onCast={handleCast} />
         )}
         {phase === 'altar' && (
-          <Altar seals={mirror.seals} />
+          <Altar
+            seals={mirror.seals}
+            onOpen={(seal) => setDetail({ seal })}
+          />
         )}
       </div>
 
@@ -247,6 +261,14 @@ export default function TheSealPress() {
 
       {showQuotaModal && (
         <QuotaModal onClose={() => setShowQuotaModal(false)} />
+      )}
+
+      {detail && (
+        <SealDetail
+          seal={detail.seal}
+          author={detail.author}
+          onClose={() => setDetail(null)}
+        />
       )}
 
       <Watermark />

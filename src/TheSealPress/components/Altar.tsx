@@ -5,9 +5,10 @@ import type { Seal } from '../types';
 
 interface Props {
   seals: Seal[];
+  onOpen: (seal: Seal) => void;
 }
 
-export default function Altar({ seals }: Props) {
+export default function Altar({ seals, onOpen }: Props) {
   if (seals.length === 0) {
     return (
       <div className="tsp-altar tsp-altar--empty">
@@ -26,7 +27,7 @@ export default function Altar({ seals }: Props) {
 
       <div className="tsp-altar__grid">
         {seals.map((seal) => (
-          <div className="tsp-altar__cell" key={seal.id}>
+          <div className="tsp-altar__cell" key={seal.id} onClick={() => onOpen(seal)} role="button">
             <div className="tsp-altar__face">
               <img src={seal.imageUrl} alt="" draggable={false} />
             </div>

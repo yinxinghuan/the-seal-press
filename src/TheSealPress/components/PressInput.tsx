@@ -15,7 +15,6 @@ const MAX_INSCRIPTION = 60;
 export default function PressInput({ monogram, onPress, onCancel }: Props) {
   const [text, setText] = useState('');
   const remaining = MAX_INSCRIPTION - text.length;
-  const hasText = text.trim().length > 0;
 
   return (
     <div className="tsp-press">
@@ -44,7 +43,6 @@ export default function PressInput({ monogram, onPress, onCancel }: Props) {
         <button
           className="tsp-cta tsp-cta--primary"
           onPointerDown={() => onPress(text)}
-          disabled={!hasText}
         >
           Press <span className="arrow" />
         </button>
