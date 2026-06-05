@@ -19,11 +19,13 @@ export interface DetailAuthor {
 interface Props {
   seal: Seal;
   author?: DetailAuthor;   // present when opened from the Field
+  like: { count: number; liked: boolean };
+  onToggleLike: () => void;
   onClose: () => void;
   onDelete: (sealId: string) => void;
 }
 
-export default function SealDetail({ seal, author, onClose, onDelete }: Props) {
+export default function SealDetail({ seal, author, like, onToggleLike, onClose, onDelete }: Props) {
   // Only your own seals can be discarded. From the Altar there's no author;
   // from the Field, only when it's yours. A buried seal lives in your own
   // save, so discarding also pulls it out of the public Field.
@@ -83,6 +85,18 @@ export default function SealDetail({ seal, author, onClose, onDelete }: Props) {
             {seal.blindPress && <span className="tsp-detail__blind"> ◌</span>}
           </span>
         </div>
+
+        <button
+          className={`tsp-detail__like${like.liked ? ' is-liked' : ''}`}
+          onClick={onToggleLike}
+        >
+          <span className="tsp-detail__like-glyph">{like.liked ? '♥' : '♡'}</span>
+          <span className="tsp-detail__like-count">
+            {like.count > 0
+              ? `${like.count} ${like.count === 1 ? 'like' : 'likes'}`
+              : 'Be the first to like'}
+          </span>
+        </button>
 
         {canDelete && (
           <button

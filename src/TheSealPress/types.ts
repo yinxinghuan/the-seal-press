@@ -35,6 +35,9 @@ export interface SealSave {
   pressUsedToday: number;
   /** All seals you've pressed (any destination) + received. Newest first. */
   seals: Seal[];
+  /** Seal ids (any author) this user has liked. Aggregated cross-user to
+   *  build public like counts via the same get/data/list projection. */
+  likes?: string[];
   /** Your monogram letter — default = first letter of platform name, editable later */
   monogram: string;
   /** Whether the first-time onboarding has been dismissed */

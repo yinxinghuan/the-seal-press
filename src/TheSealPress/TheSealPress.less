@@ -198,11 +198,12 @@
   touch-action: manipulation;
 
   .glyph {
-    color: @pink;
+    color: @cream-3;
     font-family: 'Cormorant Garamond', serif; font-style: italic;
-    font-size: 15px;
+    font-size: 16px;
   }
-  &.is-marked .glyph { color: @cream-2; }
+  &.is-liked { color: @pink; }
+  &.is-liked .glyph { color: @pink; }
   &:disabled { opacity: 0.55; cursor: default; }
 }
 .tsp-seal__iconbadge {
@@ -727,15 +728,16 @@
 
 .tsp-detail {
   position: fixed; inset: 0;
-  background: rgba(5, 1, 4, 0.9);
+  background: rgba(5, 1, 4, 0.94);
   z-index: 110;
   display: flex; align-items: center; justify-content: center;
-  padding: 30px 26px;
+  padding: 16px 14px;
+  overflow-y: auto;
   animation: tsp-modal-in 200ms ease-out;
 }
 .tsp-detail__card {
   position: relative;
-  width: 100%; max-width: 340px;
+  width: 100%; max-width: 460px;
   display: flex; flex-direction: column; align-items: center;
 }
 .tsp-detail__close {
@@ -799,6 +801,26 @@
   flex-shrink: 0;
 }
 .tsp-detail__blind { color: @pink; opacity: 0.7; }
+.tsp-detail__like {
+  margin-top: 16px; width: 100%;
+  display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+  background: rgba(245, 177, 199, 0.06);
+  border: 0.6px solid @line; border-radius: 9999px;
+  padding: 12px 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: border-color 160ms ease, background 160ms ease;
+  &.is-liked { border-color: @pink; background: rgba(245, 177, 199, 0.12); }
+}
+.tsp-detail__like-glyph {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 19px; line-height: 1; color: @cream-3;
+}
+.tsp-detail__like.is-liked .tsp-detail__like-glyph { color: @pink; }
+.tsp-detail__like-count {
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 9px; letter-spacing: 0.3em;
+  color: @cream-2; text-transform: uppercase;
+}
 .tsp-detail__discard {
   margin-top: 18px; width: 100%;
   font-family: 'Montserrat', sans-serif; font-weight: 700;

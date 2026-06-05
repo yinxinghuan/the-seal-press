@@ -34,6 +34,10 @@ export interface FieldEntry {
 
 interface UseFieldResult {
   entries: FieldEntry[];
+  /** sealId → set of userIds who liked it, aggregated across returned
+   *  users. The caller folds in their OWN likes (this read may exclude
+   *  the caller's save, same as the wall itself). */
+  likesBySeal: Map<string, Set<string>>;
   loaded: boolean;
   refresh: () => Promise<void>;
   /** Optimistically show a just-buried seal in the feed immediately,
@@ -49,6 +53,7 @@ const MAX_DISPLAY = 60;
 export function useField(): UseFieldResult {
   const [serverEntries, setServerEntries] = useState<FieldEntry[]>([]);
   const [localEntries, setLocalEntries] = useState<FieldEntry[]>([]);
+  const [likesBySeal, setLikesBySeal] = useState<Map<string, Set<string>>>(new Map());
   const [loaded, setLoaded] = useState(false);
   const sessionId = getGameUuid();
 
@@ -76,7 +81,7 @@ export function useField(): UseFieldResult {
   };
 
   const refresh = async () => {
-    if (!sessionId) { setServerEntries([]); setLoaded(true); return; }
+    if (!sessionId) { setServerEntries([]); setLikesBySeal(new Map()); setLoaded(true); return; }
     setLoaded(false);
     try {
       const res = await callAigramAPI<AigramResponse<SaveRow[]>>(
@@ -87,7 +92,9 @@ export function useField(): UseFieldResult {
 
       // Flatten ALL buried seals from ALL returned users (don't cap at
       // the data layer — that's the throttle-at-input anti-pattern).
+      // Same pass aggregates likes: sealId → set of userIds who liked it.
       const pairs: Array<{ userId: string; seal: Seal }> = [];
+      const likes = new Map<string, Set<string>>();
       for (const row of rows) {
         if (!row.user_id || !row.resource_data) continue;
         try {
@@ -97,8 +104,13 @@ export function useField(): UseFieldResult {
               pairs.push({ userId: row.user_id, seal });
             }
           }
+          for (const likedId of save.likes || []) {
+            if (!likes.has(likedId)) likes.set(likedId, new Set());
+            likes.get(likedId)!.add(row.user_id);
+          }
         } catch { /* skip corrupt row */ }
       }
+      setLikesBySeal(likes);
       pairs.sort((a, b) => (b.seal.ts ?? 0) - (a.seal.ts ?? 0));
       const limited = pairs.slice(0, MAX_DISPLAY);
 
@@ -139,5 +151,5 @@ export function useField(): UseFieldResult {
 
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
-  return { entries, loaded, refresh, injectLocal, removeLocal };
+  return { entries, likesBySeal, loaded, refresh, injectLocal, removeLocal };
 }

@@ -39,6 +39,7 @@ export default function TheSealPress() {
         savedData?.monogram ?? deriveDefaultMonogram(profile?.name);
       setMirror({
         seals: savedData?.seals ?? [],
+        likes: savedData?.likes ?? [],
         pressDay: savedData?.pressDay,
         pressUsedToday: savedData?.pressUsedToday ?? 0,
         monogram: initialMonogram,
@@ -88,6 +89,25 @@ export default function TheSealPress() {
     return merged;
   }, [field.entries, mirror?.seals, profile?.name, profile?.avatarUrl]);
 
+  // Per-seal like state: server count (other users, from get/data/list) +
+  // your own like folded in (the read may exclude your own save). Returns
+  // { count, liked } keyed by seal id, for every seal currently shown.
+  const likeInfo = useMemo(() => {
+    const myId = telegramId || 'self';
+    const myLikes = new Set(mirror?.likes ?? []);
+    const map = new Map<string, { count: number; liked: boolean }>();
+    for (const e of fieldEntries) {
+      const sid = e.seal.id;
+      const server = field.likesBySeal.get(sid);
+      let count = 0;
+      if (server) for (const uid of server) if (uid !== myId) count++;
+      const liked = myLikes.has(sid);
+      if (liked) count++;
+      map.set(sid, { count, liked });
+    }
+    return map;
+  }, [fieldEntries, field.likesBySeal, mirror?.likes]);
+
   // Phase machine
   const [phase, setPhase] = useState<Phase>('field');
   const [activeSeal, setActiveSeal] = useState<Seal | null>(null);
@@ -95,7 +115,6 @@ export default function TheSealPress() {
     inscription: string;
     blindPress: boolean;
   } | null>(null);
-  const [marked, setMarked] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string>('');
   const [showQuotaModal, setShowQuotaModal] = useState(false);
   const [detail, setDetail] = useState<{ seal: Seal; author?: DetailAuthor } | null>(null);
@@ -215,14 +234,19 @@ export default function TheSealPress() {
     setTimeout(() => field.refresh(), 1500);
   };
 
-  const handleMark = (sealId: string) => {
-    if (marked.has(sealId)) return;
-    setMarked(prev => {
-      const next = new Set(prev);
-      next.add(sealId);
-      return next;
-    });
-    events.trigger(`mark:${sealId}`);
+  const handleToggleLike = (sealId: string) => {
+    if (!mirror) return;
+    const current = mirror.likes ?? [];
+    const liked = current.includes(sealId);
+    const nextLikes = liked
+      ? current.filter(id => id !== sealId)
+      : [...current, sealId];
+    const nextSave: SealSave = { ...mirror, likes: nextLikes };
+    setMirror(nextSave);
+    persist(nextSave);
+    if (!liked) events.trigger(`like:${sealId}`);
+    // Reconcile other users' likes shortly; own like already shows locally.
+    setTimeout(() => field.refresh(), 1500);
   };
 
   const handleTab = (t: Tab) => {
@@ -249,8 +273,8 @@ export default function TheSealPress() {
           <Field
             entries={fieldEntries}
             loaded={field.loaded}
-            marked={marked}
-            onMark={handleMark}
+            likeInfo={likeInfo}
+            onToggleLike={handleToggleLike}
             selfUserId={telegramId || undefined}
             onOpen={(entry) => setDetail({
               seal: entry.seal,
@@ -308,6 +332,8 @@ export default function TheSealPress() {
         <SealDetail
           seal={detail.seal}
           author={detail.author}
+          like={likeInfo.get(detail.seal.id) ?? { count: 0, liked: false }}
+          onToggleLike={() => handleToggleLike(detail.seal.id)}
           onClose={() => setDetail(null)}
           onDelete={handleDeleteSeal}
         />

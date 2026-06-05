@@ -14,16 +14,18 @@ import { iconLookup } from '../hooks/useOracle';
 import { useEffect, useState } from 'react';
 import type { FieldEntry } from '../hooks/useField';
 
+export interface LikeState { count: number; liked: boolean; }
+
 interface Props {
   entries: FieldEntry[];
   loaded: boolean;
-  onMark: (sealId: string) => void;
-  marked: Set<string>;        // sealIds the player has already marked
+  likeInfo: Map<string, LikeState>;
+  onToggleLike: (sealId: string) => void;
   selfUserId?: string;
   onOpen: (entry: FieldEntry) => void;
 }
 
-export default function Field({ entries, loaded, onMark, marked, selfUserId, onOpen }: Props) {
+export default function Field({ entries, loaded, likeInfo, onToggleLike, selfUserId, onOpen }: Props) {
   if (!loaded) {
     return (
       <div className="tsp-field tsp-field--empty">
@@ -35,7 +37,7 @@ export default function Field({ entries, loaded, onMark, marked, selfUserId, onO
     return (
       <div className="tsp-field tsp-field--empty">
         <h3>The field is quiet tonight.</h3>
-        <p>Press the first seal — bury it here for everyone.</p>
+        <p>Press the first seal — it appears here for everyone.</p>
       </div>
     );
   }
@@ -43,9 +45,9 @@ export default function Field({ entries, loaded, onMark, marked, selfUserId, onO
     <div className="tsp-field">
       <div className="tsp-field__hd">
         <h2 className="tsp-field__title">The Field</h2>
-        <div className="tsp-field__count">{entries.length} BURIED</div>
+        <div className="tsp-field__count">{entries.length} SEALS</div>
       </div>
-      <div className="tsp-field__sub">Tonight's buried seals — scroll the dig.</div>
+      <div className="tsp-field__sub">Every seal pressed tonight — scroll the field.</div>
       <div className="tsp-field__rule" />
 
       <div className="tsp-field__feed">
@@ -54,8 +56,8 @@ export default function Field({ entries, loaded, onMark, marked, selfUserId, onO
             key={entry.seal.id}
             entry={entry}
             isSelf={entry.userId === selfUserId}
-            isMarked={marked.has(entry.seal.id)}
-            onMark={() => onMark(entry.seal.id)}
+            like={likeInfo.get(entry.seal.id) ?? { count: 0, liked: false }}
+            onLike={() => onToggleLike(entry.seal.id)}
             onOpen={() => onOpen(entry)}
           />
         ))}
@@ -65,9 +67,9 @@ export default function Field({ entries, loaded, onMark, marked, selfUserId, onO
 }
 
 function FieldCard({
-  entry, isSelf, isMarked, onMark, onOpen,
+  entry, isSelf, like, onLike, onOpen,
 }: {
-  entry: FieldEntry; isSelf: boolean; isMarked: boolean; onMark: () => void; onOpen: () => void;
+  entry: FieldEntry; isSelf: boolean; like: LikeState; onLike: () => void; onOpen: () => void;
 }) {
   const { seal, userName, userAvatarUrl, userId } = entry;
   const [now, setNow] = useState(Date.now());
@@ -120,13 +122,11 @@ function FieldCard({
 
       <div className="tsp-seal__actions">
         <button
-          className={`tsp-seal__act${isMarked ? ' is-marked' : ''}`}
-          onClick={onMark}
-          disabled={isMarked || isSelf}
-          title={isSelf ? 'your own seal' : isMarked ? 'already marked' : 'mark'}
+          className={`tsp-seal__act${like.liked ? ' is-liked' : ''}`}
+          onClick={onLike}
         >
-          <span className="glyph">◇</span>
-          {isMarked ? 'Marked' : 'Mark'}
+          <span className="glyph">{like.liked ? '♥' : '♡'}</span>
+          {like.count > 0 ? like.count : 'Like'}
         </button>
         <FieldIconBadge iconKey={seal.iconKey} />
       </div>
