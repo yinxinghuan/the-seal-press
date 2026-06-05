@@ -1,6 +1,7 @@
 // Read-only detail overlay for an already-pressed seal. Opened by tapping
 // a card in the Field (with author chip) or a cell in the Altar (own seal).
 // No cast actions — pure inspection. Close via the X or the backdrop.
+import { useState } from 'react';
 import { materialByKey } from '../data/materials';
 import { silhouetteByKey } from '../data/silhouettes';
 import { iconLookup } from '../hooks/useOracle';
@@ -19,9 +20,15 @@ interface Props {
   seal: Seal;
   author?: DetailAuthor;   // present when opened from the Field
   onClose: () => void;
+  onDelete: (sealId: string) => void;
 }
 
-export default function SealDetail({ seal, author, onClose }: Props) {
+export default function SealDetail({ seal, author, onClose, onDelete }: Props) {
+  // Only your own seals can be discarded. From the Altar there's no author;
+  // from the Field, only when it's yours. A buried seal lives in your own
+  // save, so discarding also pulls it out of the public Field.
+  const canDelete = !author || author.isSelf;
+  const [confirming, setConfirming] = useState(false);
   const icon = iconLookup(seal.iconKey);
   const material = materialByKey(seal.materialKey);
   const silhouette = silhouetteByKey(seal.silhouetteKey);
@@ -76,6 +83,19 @@ export default function SealDetail({ seal, author, onClose }: Props) {
             {seal.blindPress && <span className="tsp-detail__blind"> ◌</span>}
           </span>
         </div>
+
+        {canDelete && (
+          <button
+            className={`tsp-detail__discard${confirming ? ' is-confirming' : ''}`}
+            onClick={() => (confirming ? onDelete(seal.id) : setConfirming(true))}
+          >
+            {confirming
+              ? (seal.destination === 'buried'
+                  ? 'Tap again — unbury & destroy'
+                  : 'Tap again to destroy')
+              : 'Discard this seal'}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -799,6 +799,20 @@
   flex-shrink: 0;
 }
 .tsp-detail__blind { color: @pink; opacity: 0.7; }
+.tsp-detail__discard {
+  margin-top: 18px; width: 100%;
+  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-size: 9px; letter-spacing: 0.34em;
+  text-transform: uppercase;
+  background: transparent; color: @cream-3;
+  border: 0.6px solid @line; border-radius: 9999px;
+  padding: 11px 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 160ms ease, border-color 160ms ease;
+  &.is-confirming {
+    color: #E8607F; border-color: #E8607F;
+  }
+}
 
 // ─── Toast (gen error) ────────────────────────────────────────────
 

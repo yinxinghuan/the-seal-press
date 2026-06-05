@@ -174,6 +174,23 @@ export default function TheSealPress() {
     setPhase(destination === 'buried' ? 'field' : 'altar');
   };
 
+  const handleDeleteSeal = (sealId: string) => {
+    if (!mirror) return;
+    const target = mirror.seals.find(s => s.id === sealId);
+    const nextSave: SealSave = {
+      ...mirror,
+      seals: mirror.seals.filter(s => s.id !== sealId),
+    };
+    setMirror(nextSave);
+    persist(nextSave);
+    setDetail(null);
+    // A buried seal lives in your own save, so deleting it also removes it
+    // from the Field — refresh so the public feed reflects the removal.
+    if (target?.destination === 'buried') {
+      setTimeout(() => field.refresh(), 400);
+    }
+  };
+
   const handleMark = (sealId: string) => {
     if (marked.has(sealId)) return;
     setMarked(prev => {
@@ -268,6 +285,7 @@ export default function TheSealPress() {
           seal={detail.seal}
           author={detail.author}
           onClose={() => setDetail(null)}
+          onDelete={handleDeleteSeal}
         />
       )}
 
