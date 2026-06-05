@@ -13,7 +13,7 @@ import SealDetail, { type DetailAuthor } from './components/SealDetail';
 import Watermark from './components/Watermark';
 import { useSelfProfile } from './hooks/useSelfProfile';
 import { useSealGen } from './hooks/useSealGen';
-import { useField } from './hooks/useField';
+import { useField, type FieldEntry } from './hooks/useField';
 import { consultOracle } from './hooks/useOracle';
 import { todayKey, formatCountdown, msUntilMidnight } from './utils/day';
 import { preloadImage } from './utils/preload';
@@ -63,6 +63,30 @@ export default function TheSealPress() {
   const today = todayKey();
   const pressUsedToday = mirror?.pressDay === today ? (mirror?.pressUsedToday ?? 0) : 0;
   const pressRemaining = Math.max(0, MAX_PRESS_PER_DAY - pressUsedToday);
+
+  // The Field feed comes from get/data/list, which is eventually-consistent
+  // and may not echo the caller's own save at all. Always fold in the user's
+  // OWN buried seals (from the local mirror) so they show instantly and
+  // survive reloads regardless of server replication. Dedupe by seal.id.
+  const fieldEntries = useMemo<FieldEntry[]>(() => {
+    const mine: FieldEntry[] = (mirror?.seals ?? [])
+      .filter(s => s.destination === 'buried' && s.imageUrl)
+      .map(seal => ({
+        userId: telegramId || 'self',
+        userName: profile?.name,
+        userAvatarUrl: profile?.avatarUrl,
+        seal,
+      }));
+    const seen = new Set<string>();
+    const merged: FieldEntry[] = [];
+    for (const e of [...field.entries, ...mine]) {
+      if (seen.has(e.seal.id)) continue;
+      seen.add(e.seal.id);
+      merged.push(e);
+    }
+    merged.sort((a, b) => (b.seal.ts ?? 0) - (a.seal.ts ?? 0));
+    return merged;
+  }, [field.entries, mirror?.seals, profile?.name, profile?.avatarUrl]);
 
   // Phase machine
   const [phase, setPhase] = useState<Phase>('field');
@@ -232,7 +256,7 @@ export default function TheSealPress() {
       <div className="tsp-page">
         {phase === 'field' && (
           <Field
-            entries={field.entries}
+            entries={fieldEntries}
             loaded={field.loaded}
             marked={marked}
             onMark={handleMark}
