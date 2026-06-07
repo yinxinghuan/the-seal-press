@@ -180,6 +180,43 @@ export function playPop(): void {
   o2.stop(t0 + 0.10);
 }
 
+// Stronger pop for the like burst — louder than playPop, rising
+// sweep that reads as "+1 affection". Mirror of hour-capsule.
+export function playLike(): void {
+  const ac = getCtx();
+  if (!ac) return;
+  const t0 = ac.currentTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(840, t0);
+  osc.frequency.exponentialRampToValueAtTime(1380, t0 + 0.065);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.18);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t0);
+  osc.stop(t0 + 0.2);
+}
+
+// Softer descending sweep for unliking.
+export function playUnlike(): void {
+  const ac = getCtx();
+  if (!ac) return;
+  const t0 = ac.currentTime;
+  const osc = ac.createOscillator();
+  const gain = ac.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(640, t0);
+  osc.frequency.exponentialRampToValueAtTime(420, t0 + 0.08);
+  gain.gain.setValueAtTime(0.0001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.1, t0 + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.16);
+  osc.connect(gain).connect(ac.destination);
+  osc.start(t0);
+  osc.stop(t0 + 0.18);
+}
+
 // Small haptic buzz on mobile — best-effort, ignored on desktop.
 export function hapticTap(): void {
   if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {

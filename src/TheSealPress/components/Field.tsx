@@ -11,7 +11,8 @@
 import { openAigramProfile, isInAigram } from '@shared/runtime/bridge';
 import { relativeAgo } from '../utils/day';
 import { iconLookup } from '../hooks/useOracle';
-import { useEffect, useState } from 'react';
+import { playLike, playUnlike, hapticTap } from '../utils/audio';
+import { useEffect, useRef, useState } from 'react';
 import type { FieldEntry } from '../hooks/useField';
 
 export interface LikeState { count: number; liked: boolean; }
@@ -88,6 +89,18 @@ function FieldCard({
     openAigramProfile(userId);
   };
 
+  const [bursting, setBursting] = useState(false);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (burstTimer.current) clearTimeout(burstTimer.current); }, []);
+  const handleLikeTap = () => {
+    if (like.liked) playUnlike(); else playLike();
+    hapticTap();
+    setBursting(true);
+    if (burstTimer.current) clearTimeout(burstTimer.current);
+    burstTimer.current = setTimeout(() => setBursting(false), 520);
+    onLike();
+  };
+
   return (
     <div className="tsp-seal">
       <div className="tsp-seal__author">
@@ -122,8 +135,9 @@ function FieldCard({
 
       <div className="tsp-seal__actions">
         <button
-          className={`tsp-seal__act${like.liked ? ' is-liked' : ''}`}
-          onClick={onLike}
+          className={`tsp-seal__act${like.liked ? ' is-liked' : ''}${bursting ? ' is-bursting' : ''}`}
+          onClick={handleLikeTap}
+          data-no-feedback
         >
           <span className="glyph">{like.liked ? '♥' : '♡'}</span>
           {like.count > 0 ? like.count : 'Like'}

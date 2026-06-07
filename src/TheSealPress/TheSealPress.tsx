@@ -18,6 +18,7 @@ import { consultOracle } from './hooks/useOracle';
 import { todayKey, formatCountdown, msUntilMidnight } from './utils/day';
 import { preloadImage } from './utils/preload';
 import { newId } from './utils/rng';
+import { installGlobalTapFeedback } from './utils/audio';
 import type { Seal, SealSave, Phase } from './types';
 import { MAX_PRESS_PER_DAY } from './types';
 import './TheSealPress.less';
@@ -30,6 +31,11 @@ export default function TheSealPress() {
   const sealGen = useSealGen();
   const field = useField();
   const events = useGameEvent();
+
+  // Global tap-sound + haptic on every button / role=button / a[href]
+  // unless it carries [data-no-feedback]. Lazy-init AudioContext so we
+  // don't leak audio into the previous game while Aigram preloads.
+  useEffect(() => { installGlobalTapFeedback(); }, []);
 
   // Local mirror — useGameSave.savedData never updates after persist().
   const [mirror, setMirror] = useState<SealSave | undefined>(undefined);
@@ -360,7 +366,7 @@ function QuotaModal({ onClose }: { onClose: () => void }) {
           The press cools at midnight. Three new seals tomorrow — in
           <strong> {formatCountdown(msUntilMidnight())}</strong>.
         </p>
-        <button className="tsp-modal__cta" onPointerDown={onClose}>
+        <button className="tsp-modal__cta" onClick={onClose}>
           OK
         </button>
       </div>

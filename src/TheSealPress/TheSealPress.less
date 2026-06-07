@@ -196,15 +196,30 @@
   display: inline-flex; align-items: center; gap: 6px;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  transition: color 160ms ease;
 
   .glyph {
     color: @cream-3;
     font-family: 'Cormorant Garamond', serif; font-style: italic;
     font-size: 16px;
+    transform-origin: center;
+    transition: color 160ms ease;
+    will-change: transform;
   }
   &.is-liked { color: @pink; }
-  &.is-liked .glyph { color: @pink; }
+  &.is-liked .glyph {
+    color: @pink;
+    text-shadow: 0 0 8px rgba(245, 177, 199, 0.55);
+  }
+  &.is-bursting .glyph { animation: tsp-like-burst 520ms cubic-bezier(.2,.7,.3,1.2); }
   &:disabled { opacity: 0.55; cursor: default; }
+}
+@keyframes tsp-like-burst {
+   0% { transform: scale(1);    }
+  20% { transform: scale(1.65); }
+  45% { transform: scale(0.85); }
+  70% { transform: scale(1.18); }
+ 100% { transform: scale(1);    }
 }
 .tsp-seal__iconbadge {
   font-family: 'Montserrat', sans-serif; font-weight: 500;
@@ -713,22 +728,35 @@
   strong { color: @pink; font-weight: 600; font-style: normal;
            font-family: 'Montserrat', sans-serif; letter-spacing: 0.04em; }
 }
+// Flat solid pink pill — no gradient, no inset shadow, no border.
+// Outline border at 0.6px on iOS WebView rendered as a half-disappearing
+// pill (sub-pixel AA on the curved bottom blends with the dark modal).
+// Going fully flat sidesteps every angle that could ever look like fading.
 .tsp-modal__cta {
-  font-family: 'Montserrat', sans-serif; font-weight: 700;
+  font-family: 'Montserrat', sans-serif; font-weight: 800;
   font-size: 11px; letter-spacing: 0.42em;
   text-transform: uppercase;
-  background: transparent;
-  color: @pink;
-  border: 0.6px solid @pink;
-  padding: 12px 30px; border-radius: 9999px;
+  background: @pink;
+  color: #2A0612;
+  border: none;
+  padding: 13px 36px; border-radius: 9999px;
+  text-indent: 0.42em;       // visual-center 'OK' against the trailing letter-spacing tail
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 160ms ease, background 160ms ease;
+  &:active {
+    transform: scale(0.97);
+    background: #E89AB5;
+  }
 }
 
 // ─── Seal detail overlay (tap a Field/Altar seal) ─────────────────
 
 .tsp-detail {
   position: fixed; inset: 0;
-  background: rgba(5, 1, 4, 0.94);
+  background: @ground;            // fully opaque — no Field bleed-through
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   z-index: 110;
   display: flex; align-items: center; justify-content: center;
   padding: 16px 14px;
@@ -804,23 +832,38 @@
 .tsp-detail__like {
   margin-top: 16px; width: 100%;
   display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-  background: rgba(245, 177, 199, 0.06);
+  background: transparent;
   border: 0.6px solid @line; border-radius: 9999px;
   padding: 12px 0; cursor: pointer;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  transition: border-color 160ms ease, background 160ms ease;
-  &.is-liked { border-color: @pink; background: rgba(245, 177, 199, 0.12); }
+  transition: border-color 200ms ease, background 200ms ease;
+  &.is-liked {
+    border-color: @pink-q;
+    background: rgba(60, 14, 28, 0.92);   // solid wine fill — pink hue comes from border + text + glyph
+    box-shadow: 0 0 18px rgba(245, 177, 199, 0.18);
+  }
+  &.is-bursting .tsp-detail__like-glyph {
+    animation: tsp-like-burst 520ms cubic-bezier(.2,.7,.3,1.2);
+  }
 }
 .tsp-detail__like-glyph {
   font-family: 'Cormorant Garamond', serif;
   font-size: 19px; line-height: 1; color: @cream-3;
+  transform-origin: center;
+  transition: color 200ms ease, text-shadow 200ms ease;
+  will-change: transform;
 }
-.tsp-detail__like.is-liked .tsp-detail__like-glyph { color: @pink; }
+.tsp-detail__like.is-liked .tsp-detail__like-glyph {
+  color: @pink;
+  text-shadow: 0 0 9px rgba(245, 177, 199, 0.65);
+}
 .tsp-detail__like-count {
   font-family: 'Montserrat', sans-serif; font-weight: 700;
   font-size: 9px; letter-spacing: 0.3em;
   color: @cream-2; text-transform: uppercase;
+  transition: color 200ms ease;
 }
+.tsp-detail__like.is-liked .tsp-detail__like-count { color: @pink; }
 .tsp-detail__discard {
   margin-top: 18px; width: 100%;
   font-family: 'Montserrat', sans-serif; font-weight: 700;

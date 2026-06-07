@@ -1,12 +1,13 @@
 // Read-only detail overlay for an already-pressed seal. Opened by tapping
 // a card in the Field (with author chip) or a cell in the Altar (own seal).
 // No cast actions — pure inspection. Close via the X or the backdrop.
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { materialByKey } from '../data/materials';
 import { silhouetteByKey } from '../data/silhouettes';
 import { iconLookup } from '../hooks/useOracle';
 import { relativeAgo } from '../utils/day';
 import { openAigramProfile, isInAigram } from '@shared/runtime/bridge';
+import { playLike, playUnlike, hapticTap } from '../utils/audio';
 import type { Seal } from '../types';
 
 export interface DetailAuthor {
@@ -46,6 +47,18 @@ export default function SealDetail({ seal, author, like, onToggleLike, onClose, 
     openAigramProfile(author.userId);
   };
 
+  const [bursting, setBursting] = useState(false);
+  const burstTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (burstTimer.current) clearTimeout(burstTimer.current); }, []);
+  const handleLikeTap = () => {
+    if (like.liked) playUnlike(); else playLike();
+    hapticTap();
+    setBursting(true);
+    if (burstTimer.current) clearTimeout(burstTimer.current);
+    burstTimer.current = setTimeout(() => setBursting(false), 520);
+    onToggleLike();
+  };
+
   return (
     <div className="tsp-detail" onClick={onClose}>
       <div className="tsp-detail__card" onClick={e => e.stopPropagation()}>
@@ -53,7 +66,12 @@ export default function SealDetail({ seal, author, like, onToggleLike, onClose, 
           ✕
         </button>
 
-        <div className="tsp-detail__img">
+        <div
+          className="tsp-detail__img"
+          onClick={onClose}
+          role="button"
+          aria-label="Close"
+        >
           <img src={seal.imageUrl} alt="" draggable={false} />
         </div>
 
@@ -87,8 +105,9 @@ export default function SealDetail({ seal, author, like, onToggleLike, onClose, 
         </div>
 
         <button
-          className={`tsp-detail__like${like.liked ? ' is-liked' : ''}`}
-          onClick={onToggleLike}
+          className={`tsp-detail__like${like.liked ? ' is-liked' : ''}${bursting ? ' is-bursting' : ''}`}
+          onClick={handleLikeTap}
+          data-no-feedback
         >
           <span className="tsp-detail__like-glyph">{like.liked ? '♥' : '♡'}</span>
           <span className="tsp-detail__like-count">
