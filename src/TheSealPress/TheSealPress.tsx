@@ -250,7 +250,33 @@ export default function TheSealPress() {
     const nextSave: SealSave = { ...mirror, likes: nextLikes };
     setMirror(nextSave);
     persist(nextSave);
-    if (!liked) events.trigger(`like:${sealId}`);
+    if (!liked) {
+      // Attach a platform notify action to the like event when liking
+      // someone else's seal. Same record/play call handles both the
+      // count and the fan-out notification.
+      const entry = fieldEntries.find(e => e.seal.id === sealId);
+      const selfId = telegramId || 'self';
+      const isOther = !!entry && !!entry.userId && entry.userId !== selfId;
+      const config = (isOther && entry.seal.imageUrl)
+        ? {
+            actions: [
+              {
+                type: 'notify',
+                target_user_id: entry.userId,
+                image: {
+                  ref_url: entry.seal.imageUrl,
+                  prompt: 'sealed clay disc, AlterU Press archive',
+                },
+                message: {
+                  template: '{sender_name} kept your seal.',
+                  variables: ['sender_name'],
+                },
+              },
+            ],
+          }
+        : undefined;
+      events.trigger(`like:${sealId}`, config);
+    }
     // Reconcile other users' likes shortly; own like already shows locally.
     setTimeout(() => field.refresh(), 1500);
   };
