@@ -1,7 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameSave } from '@shared/save';
 import { useGameEvent } from '@shared/runtime';
 import { telegramId } from '@shared/runtime/bridge';
+import {
+  appendMessage,
+  guestbookNotifyConfig,
+  newMessage,
+  threadFor,
+} from '@shared/social/guestbook';
 import TopBar from './components/TopBar';
 import TabBar, { type Tab } from './components/TabBar';
 import Field from './components/Field';
@@ -50,6 +56,7 @@ export default function TheSealPress() {
         pressUsedToday: savedData?.pressUsedToday ?? 0,
         monogram: initialMonogram,
         onboarded: savedData?.onboarded ?? false,
+        messages: savedData?.messages ?? [],
       });
     }
   }, [savedData, mirror, profile?.name]);
@@ -281,6 +288,35 @@ export default function TheSealPress() {
     setTimeout(() => field.refresh(), 1500);
   };
 
+  // Leave a public note on a seal: store it in my OWN blob (the Field
+  // guestbook aggregates everyone's) and ping the author once — never self
+  // or a seal I've already pinged this session.
+  const msgNotified = useRef<Set<string>>(new Set());
+  const handleSendNote = (sealId: string, authorId: string | undefined, imageUrl: string, text: string) => {
+    if (!mirror) return;
+    const msg = newMessage(sealId, authorId, text);
+    if (!msg) return;
+    const nextSave = appendMessage(mirror, msg);
+    setMirror(nextSave);
+    persist(nextSave);
+
+    const selfId = telegramId || 'self';
+    if (authorId && authorId !== selfId && !msgNotified.current.has(sealId)) {
+      msgNotified.current.add(sealId);
+      events.trigger(
+        `seal_note:${sealId}`,
+        guestbookNotifyConfig({
+          toUserId: authorId,
+          refUrl: imageUrl,
+          note: text,
+          template: '{sender_name} left a note on your seal.',
+          imagePrompt: 'sealed clay disc, AlterU Press archive',
+        }),
+      );
+    }
+    setTimeout(() => field.refresh(), 1500);
+  };
+
   const handleTab = (t: Tab) => {
     setPhase(t === 'field' ? 'field' : 'altar');
   };
@@ -365,7 +401,17 @@ export default function TheSealPress() {
           seal={detail.seal}
           author={detail.author}
           like={likeInfo.get(detail.seal.id) ?? { count: 0, liked: false }}
+          thread={threadFor(
+            detail.seal.id,
+            field.messagesBySeal,
+            mirror.messages,
+            telegramId ?? undefined,
+          )}
+          selfUserId={telegramId || undefined}
           onToggleLike={() => handleToggleLike(detail.seal.id)}
+          onSendNote={(text) =>
+            handleSendNote(detail.seal.id, detail.author?.userId, detail.seal.imageUrl, text)
+          }
           onClose={() => setDetail(null)}
           onDelete={handleDeleteSeal}
         />

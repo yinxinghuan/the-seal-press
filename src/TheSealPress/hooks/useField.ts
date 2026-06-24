@@ -12,6 +12,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { callAigramAPI, type AigramResponse } from '@shared/runtime/bridge';
 import { getGameUuid } from '@shared/runtime/game-id';
+import { messagesByTarget, type GuestMessage } from '@shared/social/guestbook';
 import type { Seal, SealSave } from '../types';
 
 interface SaveRow {
@@ -38,6 +39,9 @@ interface UseFieldResult {
    *  users. The caller folds in their OWN likes (this read may exclude
    *  the caller's save, same as the wall itself). */
   likesBySeal: Map<string, Set<string>>;
+  /** sealId → public notes left on it, aggregated across returned users
+   *  (best-effort, same read window). Note authors carry resolved profiles. */
+  messagesBySeal: Map<string, GuestMessage[]>;
   loaded: boolean;
   refresh: () => Promise<void>;
   /** Optimistically show a just-buried seal in the feed immediately,
@@ -54,6 +58,7 @@ export function useField(): UseFieldResult {
   const [serverEntries, setServerEntries] = useState<FieldEntry[]>([]);
   const [localEntries, setLocalEntries] = useState<FieldEntry[]>([]);
   const [likesBySeal, setLikesBySeal] = useState<Map<string, Set<string>>>(new Map());
+  const [messagesBySeal, setMessagesBySeal] = useState<Map<string, GuestMessage[]>>(new Map());
   const [loaded, setLoaded] = useState(false);
   const sessionId = getGameUuid();
 
@@ -81,7 +86,7 @@ export function useField(): UseFieldResult {
   };
 
   const refresh = async () => {
-    if (!sessionId) { setServerEntries([]); setLikesBySeal(new Map()); setLoaded(true); return; }
+    if (!sessionId) { setServerEntries([]); setLikesBySeal(new Map()); setMessagesBySeal(new Map()); setLoaded(true); return; }
     setLoaded(false);
     try {
       const res = await callAigramAPI<AigramResponse<SaveRow[]>>(
@@ -114,8 +119,15 @@ export function useField(): UseFieldResult {
       pairs.sort((a, b) => (b.seal.ts ?? 0) - (a.seal.ts ?? 0));
       const limited = pairs.slice(0, MAX_DISPLAY);
 
-      // Resolve author profile per unique user.
-      const uniqueIds = Array.from(new Set(limited.map(p => p.userId)));
+      // Public guestbook notes left on seals (best-effort, same read window).
+      const msgs = messagesByTarget(rows);
+
+      // Resolve profiles for seal authors AND note authors in one batch.
+      const idSet = new Set(limited.map(p => p.userId));
+      for (const list of msgs.values()) {
+        for (const m of list) if (m.fromUserId) idSet.add(m.fromUserId);
+      }
+      const uniqueIds = Array.from(idSet);
       const profileEntries = await Promise.all(
         uniqueIds.map(async uid => {
           try {
@@ -142,6 +154,19 @@ export function useField(): UseFieldResult {
           };
         }),
       );
+
+      // Stamp note authors with their resolved profile too.
+      const msgsWithProfiles = new Map<string, GuestMessage[]>();
+      for (const [target, list] of msgs) {
+        msgsWithProfiles.set(
+          target,
+          list.map(m => {
+            const p = m.fromUserId ? profileMap.get(m.fromUserId) || null : null;
+            return { ...m, userName: p?.name, userAvatarUrl: p?.head_url };
+          }),
+        );
+      }
+      setMessagesBySeal(msgsWithProfiles);
     } catch {
       setServerEntries([]);
     } finally {
@@ -151,5 +176,5 @@ export function useField(): UseFieldResult {
 
   useEffect(() => { refresh(); /* eslint-disable-next-line */ }, []);
 
-  return { entries, likesBySeal, loaded, refresh, injectLocal, removeLocal };
+  return { entries, likesBySeal, messagesBySeal, loaded, refresh, injectLocal, removeLocal };
 }

@@ -1,3 +1,5 @@
+import type { GuestMessage } from '@shared/social/guestbook';
+
 export type DayKey = string; // YYYY-MM-DD
 
 export type Phase =
@@ -42,6 +44,10 @@ export interface SealSave {
   monogram: string;
   /** Whether the first-time onboarding has been dismissed */
   onboarded: boolean;
+  /** Public guestbook notes this user has left on seals (any author). Stored
+   *  in this user's own blob; the Field aggregates everyone's via
+   *  messagesByTarget. See @shared/social. */
+  messages?: GuestMessage[];
 }
 
 export const MAX_PRESS_PER_DAY = 3;
