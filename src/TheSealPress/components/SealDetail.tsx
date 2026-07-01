@@ -11,6 +11,8 @@ import { timeAgo, type GuestMessage } from '@shared/social/guestbook';
 import { playLike, playUnlike, hapticTap } from '../utils/audio';
 import type { Seal } from '../types';
 
+const ALTERU_APP_URL = 'https://apps.apple.com/app/id6769646546';
+
 export interface DetailAuthor {
   userId?: string;
   userName?: string;
@@ -127,7 +129,12 @@ export default function SealDetail({ seal, author, like, thread, selfUserId, onT
           {isInAigram ? (
             <Compose onSend={onSendNote} />
           ) : (
-            <div className="tsp-notes__empty">Open in AlterU to leave a note.</div>
+            <div className="tsp-notes__empty tsp-notes__download">
+              <span>Open in AlterU to leave a note.</span>
+              <a href={ALTERU_APP_URL} target="_blank" rel="noopener noreferrer">
+                Get AlterU on the App Store
+              </a>
+            </div>
           )}
         </div>
 
