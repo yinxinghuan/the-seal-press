@@ -8,7 +8,7 @@
 //   · cross-user-avatar: every cross-user surface shows avatar + name.
 //   · cross-user-profile-tap: avatar+name opens the user's profile.
 
-import { openAigramProfile, isInAigram } from '@shared/runtime/bridge';
+import { openAigramProfile, isInAigramNow } from '@shared/runtime/bridge';
 import { relativeAgo } from '../utils/day';
 import { iconLookup } from '../hooks/useOracle';
 import { playLike, playUnlike, hapticTap } from '../utils/audio';
@@ -85,7 +85,7 @@ function FieldCard({
   const initial = (userName || '?').charAt(0).toUpperCase();
   const handleAuthorTap = (ev: React.MouseEvent) => {
     ev.stopPropagation();
-    if (!isInAigram || isSelf || !userId) return;
+    if (!isInAigramNow() || isSelf || !userId) return;
     openAigramProfile(userId);
   };
 
@@ -113,7 +113,7 @@ function FieldCard({
           <button
             className="tsp-seal__author-btn"
             onClick={handleAuthorTap}
-            disabled={!isInAigram}
+            disabled={!isInAigramNow()}
           >
             {userAvatarUrl
               ? <img className="tsp-seal__avatar" src={userAvatarUrl} alt="" draggable={false} />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useGameSave } from '@shared/save';
 import { useGameEvent } from '@shared/runtime';
-import { telegramId } from '@shared/runtime/bridge';
+import { getTelegramId } from '@shared/runtime/bridge';
 import {
   appendMessage,
   guestbookNotifyConfig,
@@ -86,7 +86,7 @@ export default function TheSealPress() {
     const mine: FieldEntry[] = (mirror?.seals ?? [])
       .filter(s => s.imageUrl)
       .map(seal => ({
-        userId: telegramId || 'self',
+        userId: getTelegramId()! || 'self',
         userName: profile?.name,
         userAvatarUrl: profile?.avatarUrl,
         seal,
@@ -106,7 +106,7 @@ export default function TheSealPress() {
   // your own like folded in (the read may exclude your own save). Returns
   // { count, liked } keyed by seal id, for every seal currently shown.
   const likeInfo = useMemo(() => {
-    const myId = telegramId || 'self';
+    const myId = getTelegramId()! || 'self';
     const myLikes = new Set(mirror?.likes ?? []);
     const map = new Map<string, { count: number; liked: boolean }>();
     for (const e of fieldEntries) {
@@ -262,7 +262,7 @@ export default function TheSealPress() {
       // someone else's seal. Same record/play call handles both the
       // count and the fan-out notification.
       const entry = fieldEntries.find(e => e.seal.id === sealId);
-      const selfId = telegramId || 'self';
+      const selfId = getTelegramId()! || 'self';
       const isOther = !!entry && !!entry.userId && entry.userId !== selfId;
       const config = (isOther && entry.seal.imageUrl)
         ? {
@@ -300,7 +300,7 @@ export default function TheSealPress() {
     setMirror(nextSave);
     persist(nextSave);
 
-    const selfId = telegramId || 'self';
+    const selfId = getTelegramId()! || 'self';
     if (authorId && authorId !== selfId && !msgNotified.current.has(sealId)) {
       msgNotified.current.add(sealId);
       events.trigger(
@@ -343,14 +343,14 @@ export default function TheSealPress() {
             loaded={field.loaded}
             likeInfo={likeInfo}
             onToggleLike={handleToggleLike}
-            selfUserId={telegramId || undefined}
+            selfUserId={getTelegramId()! || undefined}
             onOpen={(entry) => setDetail({
               seal: entry.seal,
               author: {
                 userId: entry.userId,
                 userName: entry.userName,
                 userAvatarUrl: entry.userAvatarUrl,
-                isSelf: entry.userId === (telegramId || undefined),
+                isSelf: entry.userId === (getTelegramId()! || undefined),
               },
             })}
           />
@@ -405,9 +405,9 @@ export default function TheSealPress() {
             detail.seal.id,
             field.messagesBySeal,
             mirror.messages,
-            telegramId ?? undefined,
+            getTelegramId()! ?? undefined,
           )}
-          selfUserId={telegramId || undefined}
+          selfUserId={getTelegramId()! || undefined}
           onToggleLike={() => handleToggleLike(detail.seal.id)}
           onSendNote={(text) =>
             handleSendNote(detail.seal.id, detail.author?.userId, detail.seal.imageUrl, text)

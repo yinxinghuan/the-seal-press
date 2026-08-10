@@ -6,7 +6,7 @@ import { materialByKey } from '../data/materials';
 import { silhouetteByKey } from '../data/silhouettes';
 import { iconLookup } from '../hooks/useOracle';
 import { relativeAgo } from '../utils/day';
-import { openAigramProfile, isInAigram } from '@shared/runtime/bridge';
+import { openAigramProfile, isInAigramNow } from '@shared/runtime/bridge';
 import { timeAgo, type GuestMessage } from '@shared/social/guestbook';
 import { playLike, playUnlike, hapticTap } from '../utils/audio';
 import type { Seal } from '../types';
@@ -50,7 +50,7 @@ export default function SealDetail({ seal, author, like, thread, selfUserId, onT
 
   const initial = (author?.userName || '?').charAt(0).toUpperCase();
   const handleAuthorTap = () => {
-    if (!author || author.isSelf || !isInAigram || !author.userId) return;
+    if (!author || author.isSelf || !isInAigramNow() || !author.userId) return;
     openAigramProfile(author.userId);
   };
 
@@ -93,7 +93,7 @@ export default function SealDetail({ seal, author, like, thread, selfUserId, onT
             <button
               className="tsp-detail__author"
               onClick={handleAuthorTap}
-              disabled={!isInAigram}
+              disabled={!isInAigramNow()}
             >
               {author.userAvatarUrl
                 ? <img className="tsp-detail__avatar" src={author.userAvatarUrl} alt="" draggable={false} />
@@ -126,7 +126,7 @@ export default function SealDetail({ seal, author, like, thread, selfUserId, onT
           ) : (
             <div className="tsp-notes__empty">No notes yet — be the first.</div>
           )}
-          {isInAigram ? (
+          {isInAigramNow() ? (
             <Compose onSend={onSendNote} />
           ) : (
             <div className="tsp-notes__empty tsp-notes__download">
@@ -169,7 +169,7 @@ function NoteRow({ msg, selfUserId }: { msg: GuestMessage; selfUserId?: string }
   const mine = !!msg.fromUserId && msg.fromUserId === selfUserId;
   const name = mine ? 'YOU' : (msg.userName || 'someone');
   const initial = (msg.userName || '?').charAt(0).toUpperCase();
-  const tappable = !mine && !!msg.fromUserId && isInAigram;
+  const tappable = !mine && !!msg.fromUserId && isInAigramNow();
   const head = (
     <span className="tsp-note__head">
       {msg.userAvatarUrl
