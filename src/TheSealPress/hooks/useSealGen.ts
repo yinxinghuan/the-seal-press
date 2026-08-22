@@ -19,11 +19,12 @@ const ALTERU_MARK = (
 );
 
 const DEBOSSED_ENFORCE = (
-  "The carving is DEBOSSED — pressed and recessed INTO the surface, " +
-  "NOT raised in relief, NOT painted on, NOT a photographic object resting on top. " +
+  "HARD INTAGLIO SURFACE RULE: every mark is a dark recessed groove CUT DOWN INTO one flat material plane. " +
+  "There are ZERO raised shapes, ZERO bas-relief, ZERO embossed edges, and no applied or painted objects. " +
+  "Light catches only the groove rims while the carved interiors stay darker than the untouched flat surface. " +
   "EVERYTHING — borders, monogram, central icon, workshop stamp — " +
-  "is rendered as the same kind of recessed line-carving in the body of the artifact. " +
-  "The whole image reads as ONE solid carved artifact with crisp grooved lines."
+  "uses the same shallow incised line-carving in the artifact body. " +
+  "The whole image reads as ONE solid flat artifact with crisp sunken lines, never sculpted relief."
 );
 
 export interface SealSpec {

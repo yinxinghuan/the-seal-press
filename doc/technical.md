@@ -67,7 +67,7 @@
 - 多语言：包含 i18n / locale 检测或 `t()` 文案函数。
 - 存储：使用 localStorage、useGameSave 或 persist 保存分数、收藏、墙数据或本地状态。
 - Aigram 运行时：接入 `@shared/runtime` 或平台桥接能力，用于用户、资料页、分享、通知或平台 API。
-- AI / 生成接口：包含图像生成、视觉识别、ref_url 或 img2img 相关流程。
+- AI / 生成接口：护符通过 AlterU 独立媒体服务的 `text` 模式生成；固定游戏 UUID `7cc54a75-febb-4f96-8eb0-3319b8f94057` 作为 `session_id`，输出 512×512。`media.ts` 负责幂等键、尺寸、任务轮询和结构化错误。
 - 社交墙 / 归档：包含 wall、gallery、feed 或 archive 数据流与浏览界面。
 
 ## 4. 扩展点
@@ -77,3 +77,4 @@
 - 调视觉：修改主样式文件中的颜色、间距、动画时长、网格尺寸和响应式规则。
 - 改文案：修改 i18n 字典、组件内标题按钮文案，保持 zh/en 同步。
 - 加平台能力：在已有 `@shared/runtime`、useGameSave、排行榜、墙或通知调用附近扩展，避免另起一套存储。
+- 调生成内容：修改 `src/TheSealPress/hooks/useSealGen.ts`；媒体传输与重试修改 `src/shared/runtime/useGenImage.ts` 和 `media.ts`。
